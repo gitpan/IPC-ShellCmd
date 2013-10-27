@@ -21,9 +21,10 @@ test_requires 'Test::More' => '0.88';
 author_requires 'Test::NoTabs';
 author_requires 'Test::Pod' => '1.14';
 author_requires 'Test::Pod::Coverage' => '1.04';
+author_requires 'Test::Spelling' => '0.11';
 
 author_tests 't/author';
 
-resources repository => 'http://goatse.co.uk/~bobtfish/IPC-ShellCmd/.git';
+resources repository => 'https://github.com/fordmason/IPC-ShellCmd.git';
 
 WriteAll;

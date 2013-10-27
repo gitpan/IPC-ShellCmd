@@ -1,5 +1,3 @@
-# $Id: CheckOS.pm,v 1.32 2008/11/11 23:49:49 drhyde Exp $
-
 package #
 Devel::CheckOS;
 
@@ -8,7 +6,7 @@ use Exporter;
 
 use vars qw($VERSION @ISA @EXPORT_OK %EXPORT_TAGS);
 
-$VERSION = '1.61';
+$VERSION = '1.71';
 
 # localising prevents the warningness leaking out of this module
 local $^W = 1;    # use warnings is a 5.6-ism
@@ -309,13 +307,18 @@ Thanks to Matt Kraai for information about QNX.
 Thanks to Kenichi Ishigaki and Gabor Szabo for reporting a bug on Windows,
 and to the former for providing a patch.
 
-=head1 CVS
+Thanks to Paul Green for some information about VOS.
 
-L<http://drhyde.cvs.sourceforge.net/drhyde/perlmodules/Devel-CheckOS/>
+Thanks to Yanick Champoux for a patch to let Devel::AssertOS support
+negative assertions.
+
+=head1 SOURCE CODE REPOSITORY
+
+L<git://github.com/DrHyde/perl-modules-Devel-CheckOS.git>
 
 =head1 COPYRIGHT and LICENCE
 
-Copyright 2007 David Cantrell
+Copyright 2007-2012 David Cantrell
 
 This software is free-as-in-speech software, and may be used, distributed, and modified under the terms of either the GNU General Public Licence version 2 or the Artistic Licence. It's up to you which one you use. The full text of the licences can be found in the files GPL2.txt and ARTISTIC.txt, respectively.
 

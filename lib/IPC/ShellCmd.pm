@@ -5,9 +5,10 @@ use Carp qw(carp croak);
 use Scalar::Util;
 use IO::Pipe;
 use POSIX qw(:sys_wait_h);
+use Time::HiRes qw(time);
 use 5.008004; # May work with lower, unwilling to support unless you provide patches :)
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 $VERSION = eval $VERSION;
 
 $IPC::ShellCmd::BufferLength = 16384;
@@ -19,9 +20,12 @@ IPC::ShellCmd - Run a command with a given environment and capture output
 =head1 SYNOPSIS
 
     my $isc = IPC::ShellCmd->new(["perl", "Makefile.PL"])
-	    ->working_directory("/path/to/IPC_ShellCmd-0.01")
+	    ->working_dir("/path/to/IPC_ShellCmd-0.01")
 	    ->stdin(-filename => "/dev/null")
 	    ->add_envs(PERL5LIB => "/home/mbm/cpanlib/lib/perl5")
+            ->add_timers(300 => 'TERM',
+                         360 => 'KILL',
+                         5   => \&display_progress),
 	    ->chain_prog(
 	        IPC::ShellCmd::Sudo->new(
 		        User => 'cpanbuild',
@@ -40,26 +44,26 @@ are set in the child, working directories set etc.
 
 It aims to provide a reasonable interface for setting up command execution
 environment (working directory, environment variables, stdin, stdout and
-stderr redirection if necessary), but allowing for ssh and sudo and magicing
+stderr redirection if necessary), but allowing for ssh and sudo and magicking
 in the appropriate shell quoting.
 
 It tries to be flexible about how you might want to capture output, exit
 status and other such, but in such a way as it's hopefully easy to understand
 and make it work.
 
-Setup method calls are chainable in a L<File::Find::Rule> kind of a way.
+Setup method calls are chain-able in a L<File::Find::Rule> kind of a way.
 
 =head2 my I<$isc> = IPC::ShellCmd->B<new>(\I<@cmd>, I<%opts>)
 
 Creates a new IPC::ShellCmd object linking to the command and arguments. Possible options:
 
-=over 4
+=over
 
-=item -nowarn
+=item C<<-nowarn>>
 
 Don't throw warnings for overwriting values that have already been set
 
-=item -debug
+=item C<<-debug>>
 
 Set the debug level
 
@@ -224,6 +228,36 @@ sub add_envs {
     return $self;
 }
 
+=head2 I<$isc>->B<add_timers>(I<$time1> => I<$signame> [, I<$time2> => \I<&handler>, ...])
+
+Adds timers to be setup when the command is run.
+Returns I<> so that it can be chained.
+
+=cut
+
+sub add_timers {
+    my ($self, @timers) = @_;
+
+    croak "Can't change setup after command has been run"
+	    if(($self->{run} || 0) > 0);
+
+    croak "No timers specified"
+	    unless @timers;
+
+    $self->{timers} ||= [];
+    
+    while (my($time, $action) = splice(@timers, 0, 2)) {
+	    $time += time
+		if $self->{running};
+	    $self->_debug(2, "Adding timer at '$time' => '$action'");
+	    push @{$self->{timers}}, [ $time, $action ];
+    }
+
+    $self->{timers} = [ sort { $a->[0] <=> $b->[0] } @{$self->{timers}} ]
+	    if $self->{running};
+    return $self;
+}
+
 =head2 I<$isc>->B<chain_prog>(I<$chain_obj>, [I<$opt> => I<$val>, ...])
 
 Adds a chain object, for example IPC::ShellCmd::Sudo->new(User => 'root')
@@ -231,18 +265,18 @@ into the chain. Returns I<> so that it can be chained.
 
 Valid options are:
 
-=over 4
+=over
 
-=item -include-stdin
+=item C<<-include-stdin>>
 
-If set, and stdin is a filename (rather than a pipe, open filehandle, or
+If set, and stdin is a file name (rather than a pipe, open filehandle, or
 other type of descriptor) then the file will be included in the chain.  
 
-=item -include-stdout
+=item C<<-include-stdout>>
 
 As above but with stdout.
 
-=item -include-stderr
+=item C<<-include-stderr>>
 
 As above but with stderr.
 
@@ -310,24 +344,24 @@ been warned.
 The 2 argument form takes a type and then a ref, handle or other.
 Valid types:
 
-=over 4
+=over 
 
-=item -inherit
+=item C<<-inherit>>
 
 The argument to this is ignored. If specified this takes stdin
 from whatever the caller is reading from.
 
-=item -file
+=item C<<-file>>
 
 The argument to this is a perl filehandle.
 
-=item -fd
+=item C<<-fd>>
 
 The argument to this is a system file descriptor.
 
-=item -filename
+=item C<<-filename>>
 
-The argument to this is a filename which is opened.
+The argument to this is a file name which is opened.
 
 =back
 
@@ -384,7 +418,7 @@ sub stdin {
 	    }
 	    elsif($_[0] eq "-filename") {
 	        if(!defined $_[1] || ref $_[1] || $_[1] =~ /\000/) {
-		        croak "Argument to -filename wasn't a valid filename";
+		        croak "Argument to -filename wasn't a valid file name";
 	        }
 	        $self->{stdin} = [filename => $_[1]];
 	        $self->{select}->[0] = 0;
@@ -431,7 +465,7 @@ to the B<stdin> method above.
 
 The 1 argument form takes either
 
-=over 4
+=over
 
 =item A scalar ref
 
@@ -448,24 +482,24 @@ of text to be appended which has been read from stdout/stderr.
 The 2 argument form takes a type and then a ref, handle or other.
 Valid types:
 
-=over 4
+=over
 
-=item -inherit
+=item C<<-inherit>>
 
 The argument to this is ignored. If specified this takes stdout/stderr
 from whatever the caller is set to.
 
-=item -file
+=item C<<-file>>
 
 The argument to this is a perl filehandle.
 
-=item -fd
+=item C<<-fd>>
 
 The argument to this is a system file descriptor.
 
-=item -filename
+=item C<<-filename>>
 
-The argument to this is a filename which is opened.
+The argument to this is a file name which is opened.
 
 =back
 
@@ -617,6 +651,12 @@ sub run {
     }
 }
 
+    # adjust the timer time values to be epoch values
+    my $now = time;
+    $self->{timers} = [ sort { $a->[0] <=> $b->[0] } map { $_->[0] += $now; $_ } @{$self->{timers} || []} ];
+
+    $self->{running} = 1;
+
     my $pid = fork();
 
     if(!defined $pid) {
@@ -717,6 +757,7 @@ sub run {
         $self->_select_wait($pid);
     }
 
+    $self->{running} = 0;
     $self->{run} = 1;
 
     return $self;
@@ -746,7 +787,7 @@ sub _select_wait {
     while($rin =~ /[^\0]/ || $win =~ /[^\0]/) {
         select($rout = $rin, $wout = $win, $eout = $ein, 0.01);
 
-        if($self->{stdin}->[0] ne "file" && vec($wout, fileno($self->{stdin}->[2]), 1)) {
+        if($self->{stdin}->[0] ne "file" && defined fileno($self->{stdin}->[2]) && vec($wout, fileno($self->{stdin}->[2]), 1)) {
             if($self->{stdin}->[0] eq "plain") {
                 my $length = length($self->{stdin}->[1]);
                 if($length) {
@@ -829,7 +870,7 @@ sub _select_wait {
             }
 
             for my $fh (qw(stdout stderr)) {
-                if($self->{$fh}->[0] ne "file" && vec($rout, fileno($self->{$fh}->[2]), 1)) {
+                if($self->{$fh}->[0] ne "file" && defined(fileno($self->{$fh}->[2])) && vec($rout, fileno($self->{$fh}->[2]), 1)) {
                     my $buff = "";
                     $self->_debug(3, "Reading $IPC::ShellCmd::BufferLength from $fh");
                     my $rc = sysread($self->{$fh}->[2], $buff, $IPC::ShellCmd::BufferLength);
@@ -857,6 +898,23 @@ sub _select_wait {
                 $win = "";
                 $self->{status} = $?;
             }
+
+	    if (@{$self->{timers}}) {
+		my $now = time;
+		while (@{$self->{timers}} && $self->{timers}->[0][0] <= $now) {
+		    $DB::single=1;
+		    my ($time, $action) = @{shift @{$self->{timers}}};
+		    if (ref $action eq 'CODE') {
+			$self->_debug(3, "Calling timer handler at $now");
+			$action->($self, $pid, $time);
+		    }
+		    else {
+			$self->_debug(3, "Sending signal $action to child $pid at $now");
+			kill $action, $pid
+			    or $self->_debug(3, "Sending signal failed");
+		    }
+		}
+	    }
         }
 
         if($rin !~ /[^\0]/ && $win !~ /[^\0]/ && !defined $self->{status}) {
@@ -950,7 +1008,7 @@ sub _select_wait {
                     push(@args, "-" . $fh, $self->{$fh}->[1]);
                     $file->{$fh} = 0;
                     # in this sub bit, because of $file->{fh}, this must be
-                    # a filename, so we can do the following.
+                    # a file name, so we can do the following.
                     $self->{$fh}->[1] = "/dev/null";
                 }
             }
@@ -976,7 +1034,7 @@ sub _select_wait {
             }
         }
 
-        # as a side effect of this sub, we also end up transforming filenames and fds
+        # as a side effect of this sub, we also end up transforming file names and file descriptors
         # into file handles.
         for my $fh (qw(stdin stdout stderr)) {
             local $Carp::CarpLevel = 1;
@@ -1019,9 +1077,12 @@ L<IPC::ShellCmd::Generic>, L<IPC::ShellCmd::Sudo>, L<IPC::ShellCmd::SSH>, L<IO::
 
     Tomas Doran (t0m) <bobtfish@bobtfish.net>
 
+    Andrew Ford <andrew@ford-mason.co.uk>
+
 =head1 COPYRIGHT
 
-Copyright (c) 2009 the British Broadcasting Corperation.
+Copyright (c) 2009 the British Broadcasting Corporation.
+
 
 =head1 LICENSE
 

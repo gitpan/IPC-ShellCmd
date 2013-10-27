@@ -4,9 +4,12 @@ NAME
 
 SYNOPSIS
         my $isc = IPC::ShellCmd->new(["perl", "Makefile.PL"])
-                ->working_directory("/path/to/IPC_ShellCmd-0.01")
+                ->working_dir("/path/to/IPC_ShellCmd-0.01")
                 ->stdin(-filename => "/dev/null")
                 ->add_envs(PERL5LIB => "/home/mbm/cpanlib/lib/perl5")
+                ->add_timers(300 => 'TERM',
+                             360 => 'KILL',
+                             5   => \&display_progress),
                 ->chain_prog(
                     IPC::ShellCmd::Sudo->new(
                             User => 'cpanbuild',
@@ -25,23 +28,23 @@ DESCRIPTION
     It aims to provide a reasonable interface for setting up command
     execution environment (working directory, environment variables, stdin,
     stdout and stderr redirection if necessary), but allowing for ssh and
-    sudo and magicing in the appropriate shell quoting.
+    sudo and magicking in the appropriate shell quoting.
 
     It tries to be flexible about how you might want to capture output, exit
     status and other such, but in such a way as it's hopefully easy to
     understand and make it work.
 
-    Setup method calls are chainable in a File::Find::Rule kind of a way.
+    Setup method calls are chain-able in a File::Find::Rule kind of a way.
 
   my *$isc* = IPC::ShellCmd->new(\*@cmd*, *%opts*)
     Creates a new IPC::ShellCmd object linking to the command and arguments.
     Possible options:
 
-    -nowarn
+    "<-nowarn">
         Don't throw warnings for overwriting values that have already been
         set
 
-    -debug
+    "<-debug">
         Set the debug level
 
   *$isc*->set_umask(*$mask*)
@@ -57,21 +60,25 @@ DESCRIPTION
     Adds environment variables to be setup when the command is run. Returns
     ** so that it can be chained.
 
+  *$isc*->add_timers(*$time1* => *$signame* [, *$time2* => \*&handler*, ...])
+    Adds timers to be setup when the command is run. Returns ** so that it
+    can be chained.
+
   *$isc*->chain_prog(*$chain_obj*, [*$opt* => *$val*, ...])
     Adds a chain object, for example IPC::ShellCmd::Sudo->new(User =>
     'root') into the chain. Returns ** so that it can be chained.
 
     Valid options are:
 
-    -include-stdin
-        If set, and stdin is a filename (rather than a pipe, open
+    "<-include-stdin">
+        If set, and stdin is a file name (rather than a pipe, open
         filehandle, or other type of descriptor) then the file will be
         included in the chain.
 
-    -include-stdout
+    "<-include-stdout">
         As above but with stdout.
 
-    -include-stderr
+    "<-include-stderr">
         As above but with stderr.
 
   *$isc*->stdin($stdin)
@@ -92,17 +99,18 @@ DESCRIPTION
     The 2 argument form takes a type and then a ref, handle or other. Valid
     types:
 
-    -inherit
+    "<-inherit">
         The argument to this is ignored. If specified this takes stdin from
         whatever the caller is reading from.
 
-    -file
+    "<-file">
         The argument to this is a perl filehandle.
 
-    -fd The argument to this is a system file descriptor.
+    "<-fd">
+        The argument to this is a system file descriptor.
 
-    -filename
-        The argument to this is a filename which is opened.
+    "<-filename">
+        The argument to this is a file name which is opened.
 
     Both of these return ** for chaining. The default is an empty scalar.
 
@@ -132,17 +140,18 @@ DESCRIPTION
     The 2 argument form takes a type and then a ref, handle or other. Valid
     types:
 
-    -inherit
+    "<-inherit">
         The argument to this is ignored. If specified this takes
         stdout/stderr from whatever the caller is set to.
 
-    -file
+    "<-file">
         The argument to this is a perl filehandle.
 
-    -fd The argument to this is a system file descriptor.
+    "<-fd">
+        The argument to this is a system file descriptor.
 
-    -filename
-        The argument to this is a filename which is opened.
+    "<-filename">
+        The argument to this is a file name which is opened.
 
     All of these forms return ** for chaining. The default is that it will
     populate an internal variable to be used by the corresponding 0-argument
@@ -168,8 +177,10 @@ AUTHORS
 
         Tomas Doran (t0m) <bobtfish@bobtfish.net>
 
+        Andrew Ford <andrew@ford-mason.co.uk>
+
 COPYRIGHT
-    Copyright (c) 2009 the British Broadcasting Corperation.
+    Copyright (c) 2009 the British Broadcasting Corporation.
 
 LICENSE
     This library is free software and may be distributed under the same
