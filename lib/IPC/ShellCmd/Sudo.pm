@@ -12,7 +12,7 @@ use base qw(IPC::ShellCmd::ShBase);
 
     $cmd_obj->chain_prog(
         IPC::ShellCmd::Sudo->new(
-	        User => 'cpanbuild',
+                User => 'cpanbuild',
             SetHome => 1,
         )
     );
@@ -53,10 +53,10 @@ sub chain {
     my @sudo_args = ('sudo');
 
     push (@sudo_args, "-u", $self->{args}->{User})
-	    if(defined $self->{args}->{User});
+            if(defined $self->{args}->{User});
 
     push (@sudo_args, "-H")
-	    if(defined $self->{args}->{SetHome} && $self->{args}->{SetHome});
+            if(defined $self->{args}->{SetHome} && $self->{args}->{SetHome});
 
     push (@sudo_args, "sh", "-c", $cmd_string);
 

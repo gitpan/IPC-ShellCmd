@@ -1,3 +1,7 @@
+0.003   2013-10-28
+  - changed regexes matching command output on tests to match BSD and MacOS usage as well
+    as Linux.
+
 0.002   2013-10-27
   - Added timer functionality
   - author tests now only run if $ENV{TEST_AUTHOR} is set

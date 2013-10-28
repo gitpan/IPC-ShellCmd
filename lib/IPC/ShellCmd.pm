@@ -8,7 +8,7 @@ use POSIX qw(:sys_wait_h);
 use Time::HiRes qw(time);
 use 5.008004; # May work with lower, unwilling to support unless you provide patches :)
 
-our $VERSION = '0.002';
+our $VERSION = '0.003';
 $VERSION = eval $VERSION;
 
 $IPC::ShellCmd::BufferLength = 16384;
@@ -20,18 +20,18 @@ IPC::ShellCmd - Run a command with a given environment and capture output
 =head1 SYNOPSIS
 
     my $isc = IPC::ShellCmd->new(["perl", "Makefile.PL"])
-	    ->working_dir("/path/to/IPC_ShellCmd-0.01")
-	    ->stdin(-filename => "/dev/null")
-	    ->add_envs(PERL5LIB => "/home/mbm/cpanlib/lib/perl5")
+            ->working_dir("/path/to/IPC_ShellCmd-0.01")
+            ->stdin(-filename => "/dev/null")
+            ->add_envs(PERL5LIB => "/home/mbm/cpanlib/lib/perl5")
             ->add_timers(300 => 'TERM',
                          360 => 'KILL',
                          5   => \&display_progress),
-	    ->chain_prog(
-	        IPC::ShellCmd::Sudo->new(
-		        User => 'cpanbuild',
-		        SetHome => 1,
-		    )
-	    )->run();
+            ->chain_prog(
+                IPC::ShellCmd::Sudo->new(
+                        User => 'cpanbuild',
+                        SetHome => 1,
+                    )
+            )->run();
 
     my $stdout = $isc->stdout();
     my $status = $isc->status();
@@ -77,18 +77,18 @@ sub new {
     my %options = @_;
 
     if(!$cmd || !ref($cmd) || ref($cmd) ne "ARRAY") {
-	    croak "Expecting an ARRAYREF for the command";
+            croak "Expecting an ARRAYREF for the command";
     }
 
     my @cmd = @$cmd;
 
     if(!@cmd) {
-	    croak "Must specify at least one thing to run";
+            croak "Must specify at least one thing to run";
     }
 
     for my $cmd_el (@cmd) {
-	    croak "Command arguments must all be strings"
-	        if(!defined $cmd_el || ref($cmd_el)); 
+            croak "Command arguments must all be strings"
+                if(!defined $cmd_el || ref($cmd_el));
     }
 
     my $self = bless {cmd => [@cmd], opts => {}}, $package;
@@ -105,19 +105,19 @@ sub _init {
     my $opts = shift;
 
     $self->{opts}->{warn} = 1
-	    unless $opts->{'-nowarn'};
+            unless $opts->{'-nowarn'};
 
     $self->{select}->[0] =
-	$self->{select}->[1] =
-	$self->{select}->[2] = 1;
+        $self->{select}->[1] =
+        $self->{select}->[2] = 1;
 
     $self->{debug} = 0;
     $self->{debug} = $opts->{'-debug'}
-	    if($opts->{'-debug'} && $opts->{'-debug'} =~ /^\d+$/);
+            if($opts->{'-debug'} && $opts->{'-debug'} =~ /^\d+$/);
 
     $self->{'argv0'} = $self->{cmd}->[0];
     $self->{'argv0'} = $opts->{'-argv0'}
-	    if($opts->{'-argv0'} && !ref $opts->{'-argv0'});
+            if($opts->{'-argv0'} && !ref $opts->{'-argv0'});
 }
 
 sub _debug {
@@ -126,7 +126,7 @@ sub _debug {
     my $string = shift;
 
     carp sprintf("%s::debug%d: %s", ref($self), $level, $string)
-	    if ($level <= $self->{debug});
+            if ($level <= $self->{debug});
 }
 
 =head2 I<$isc>->B<set_umask>(I<$mask>)
@@ -141,19 +141,19 @@ sub set_umask {
     my $umask = shift;
 
     if($self->{opts}->{warn} && defined $self->{umask}) {
-	    carp "Overwriting umask";
+            carp "Overwriting umask";
     }
 
     if(!defined $umask) {
-	    croak "Can't use an undefined umask";
+            croak "Can't use an undefined umask";
     }
 
     if($self->{run}) {
-	    croak "Can't change setup after command has been run";
+            croak "Can't change setup after command has been run";
     }
 
     if(ref $umask || $umask !~ /^\d+$/) {
-	    croak "Invalid umask";
+            croak "Invalid umask";
     }
 
     $self->{umask} = $umask;
@@ -173,26 +173,26 @@ sub working_dir {
     my $self = shift;
 
     if(@_ && !defined $_[0]) {
-	    croak "Can't set working directory to undefined path";
+            croak "Can't set working directory to undefined path";
     }
 
     my $path = shift;
 
     if($self->{opts}->{warn} && defined $self->{wd}) {
-	    carp "Overwriting working directory";
+            carp "Overwriting working directory";
     }
 
     if($self->{run} && defined $path) {
-	    croak "Can't change setup after command has been run";
+            croak "Can't change setup after command has been run";
     }
 
     if(defined $path && !ref $path) {
-	    $self->_debug(2, "Setting working directory to \"$path\"");
-	    $self->{wd} = $path;
-	    return $self;
+            $self->_debug(2, "Setting working directory to \"$path\"");
+            $self->{wd} = $path;
+            return $self;
     }
     elsif(defined $path) {
-	    croak "Expecting a string as working dir path";
+            croak "Expecting a string as working dir path";
     }
     return $self->{wd};
 }
@@ -209,20 +209,20 @@ sub add_envs {
     my %env = @_;
 
     croak "Can't change setup after command has been run"
-	    if($self->{run});
+            if($self->{run});
 
     croak "No envs specified"
-	    unless @_;
+            unless @_;
 
     my $count = 0;
 
     for my $e (keys %env) {
-	    $count++;
-	    if($self->{opts}->{warn} && exists $self->{env}->{$e}) {
-	        carp "Overwriting environment \"$e\"";
-	    }
-	    $self->{env}->{$e} = $env{$e};
-	    $self->_debug(2, "Adding environment '$e' => '$env{$e}'");
+            $count++;
+            if($self->{opts}->{warn} && exists $self->{env}->{$e}) {
+                carp "Overwriting environment \"$e\"";
+            }
+            $self->{env}->{$e} = $env{$e};
+            $self->_debug(2, "Adding environment '$e' => '$env{$e}'");
     }
 
     return $self;
@@ -239,22 +239,22 @@ sub add_timers {
     my ($self, @timers) = @_;
 
     croak "Can't change setup after command has been run"
-	    if(($self->{run} || 0) > 0);
+            if(($self->{run} || 0) > 0);
 
     croak "No timers specified"
-	    unless @timers;
+            unless @timers;
 
     $self->{timers} ||= [];
-    
+
     while (my($time, $action) = splice(@timers, 0, 2)) {
-	    $time += time
-		if $self->{running};
-	    $self->_debug(2, "Adding timer at '$time' => '$action'");
-	    push @{$self->{timers}}, [ $time, $action ];
+            $time += time
+                if $self->{running};
+            $self->_debug(2, "Adding timer at '$time' => '$action'");
+            push @{$self->{timers}}, [ $time, $action ];
     }
 
     $self->{timers} = [ sort { $a->[0] <=> $b->[0] } @{$self->{timers}} ]
-	    if $self->{running};
+            if $self->{running};
     return $self;
 }
 
@@ -270,7 +270,7 @@ Valid options are:
 =item C<<-include-stdin>>
 
 If set, and stdin is a file name (rather than a pipe, open filehandle, or
-other type of descriptor) then the file will be included in the chain.  
+other type of descriptor) then the file will be included in the chain.
 
 =item C<<-include-stdout>>
 
@@ -290,23 +290,23 @@ sub chain_prog {
     my %opts = @_;
 
     croak "Can't change setup after command has been run"
-	    if($self->{run});
+            if($self->{run});
 
     croak "Expecting a IPC::ShellCmd::Chain type of object"
-	    unless Scalar::Util::blessed($obj) && $obj->can("chain");
+            unless Scalar::Util::blessed($obj) && $obj->can("chain");
 
     $self->{chain} = []
-	unless $self->{chain};
+        unless $self->{chain};
 
     my $opt = {};
     if($opts{'-include-stdin'}) {
-	    $opt->{stdin} = 1;
+            $opt->{stdin} = 1;
     }
     if($opts{'-include-stdout'}) {
-	    $opt->{stdout} = 1;
+            $opt->{stdout} = 1;
     }
     if($opts{'-include-stderr'}) {
-	    $opt->{stderr} = 1;
+            $opt->{stderr} = 1;
     }
 
     $self->_debug(2, "chaining a " . ref($obj) . " object");
@@ -332,7 +332,7 @@ This is the input to the command in full.
 
 This is a reference to the input that will be passed.
 
-=item A code ref 
+=item A code ref
 
 This is expected to generate the text to send to stdin. It is
 called with an argument of the number of bytes that the caller
@@ -344,7 +344,7 @@ been warned.
 The 2 argument form takes a type and then a ref, handle or other.
 Valid types:
 
-=over 
+=over
 
 =item C<<-inherit>>
 
@@ -374,68 +374,68 @@ sub stdin {
     my $self = shift;
 
     croak "Can't change setup after command has been run"
-	    if ($self->{run});
+            if ($self->{run});
 
     carp "Overwriting stdin"
-	    if ($self->{opts}->{warn} && $self->{stdin});
+            if ($self->{opts}->{warn} && $self->{stdin});
 
     if(@_ == 1) {
-	    if (!defined $_[0]) {
-	        croak "Argument wasn't defined";
-	    }
+            if (!defined $_[0]) {
+                croak "Argument wasn't defined";
+            }
 
-	    if (ref $_[0] && ref $_[0] ne "CODE" && ref $_[0] ne "SCALAR") {
-	        croak "Expecting string, coderef or scalarref for one-argument form";
-	    }
-	    elsif(!ref $_[0]) {
-	        $self->{stdin} = [plain => $_[0]];
-	        $self->{select}->[0] = 1;
-	    }
-	    elsif(ref $_[0] eq "CODE") {
-	        $self->{stdin} = [coderef => $_[0]];
-	        $self->{select}->[0] = 1;
-	    }
-	    elsif(ref $_[0] eq "SCALAR") {
-	        $self->{stdin} = [scalarref => $_[0]];
-	        $self->{select}->[0] = 1;
-	    }
-	    else {
-	        die "Should be unreachable";
-	    }
+            if (ref $_[0] && ref $_[0] ne "CODE" && ref $_[0] ne "SCALAR") {
+                croak "Expecting string, coderef or scalarref for one-argument form";
+            }
+            elsif(!ref $_[0]) {
+                $self->{stdin} = [plain => $_[0]];
+                $self->{select}->[0] = 1;
+            }
+            elsif(ref $_[0] eq "CODE") {
+                $self->{stdin} = [coderef => $_[0]];
+                $self->{select}->[0] = 1;
+            }
+            elsif(ref $_[0] eq "SCALAR") {
+                $self->{stdin} = [scalarref => $_[0]];
+                $self->{select}->[0] = 1;
+            }
+            else {
+                die "Should be unreachable";
+            }
     }
     elsif(@_ == 2) {
-	    if(!defined $_[0]) {
-	        croak "Type wasn't defined";
-	    }
+            if(!defined $_[0]) {
+                croak "Type wasn't defined";
+            }
 
-	    if($_[0] eq "-inherit") {
-	        $self->{stdin} = [file => \*STDIN];
-	        $self->{select}->[0] = 0;
-	    }
-	    elsif($_[0] eq "-file") {
-	        $self->{stdin} = [file => $_[1]];
-	        $self->{select}->[0] = 0;
-	    }
-	    elsif($_[0] eq "-filename") {
-	        if(!defined $_[1] || ref $_[1] || $_[1] =~ /\000/) {
-		        croak "Argument to -filename wasn't a valid file name";
-	        }
-	        $self->{stdin} = [filename => $_[1]];
-	        $self->{select}->[0] = 0;
-	    }
-	    elsif($_[0] eq "-fd") {
-	        if(!defined $_[1] || ref $_[1] || $_[1] !~ /^\d+$/) {
-		        croak "Argument to -fd wasn't a file descriptor";
-	        }
-	        $self->{stdin} = [fd => $_[1]];
-	        $self->{select}->[0] = 0;
-	    }
-	    else {
-	        croak "Unknown type \"$_[0]\"";
-	    }
+            if($_[0] eq "-inherit") {
+                $self->{stdin} = [file => \*STDIN];
+                $self->{select}->[0] = 0;
+            }
+            elsif($_[0] eq "-file") {
+                $self->{stdin} = [file => $_[1]];
+                $self->{select}->[0] = 0;
+            }
+            elsif($_[0] eq "-filename") {
+                if(!defined $_[1] || ref $_[1] || $_[1] =~ /\000/) {
+                        croak "Argument to -filename wasn't a valid file name";
+                }
+                $self->{stdin} = [filename => $_[1]];
+                $self->{select}->[0] = 0;
+            }
+            elsif($_[0] eq "-fd") {
+                if(!defined $_[1] || ref $_[1] || $_[1] !~ /^\d+$/) {
+                        croak "Argument to -fd wasn't a file descriptor";
+                }
+                $self->{stdin} = [fd => $_[1]];
+                $self->{select}->[0] = 0;
+            }
+            else {
+                croak "Unknown type \"$_[0]\"";
+            }
     }
     else {
-	    croak "Expecting 1 or 2 arguments";
+            croak "Expecting 1 or 2 arguments";
     }
 
     $self->_debug(2, "Updating stdin to be of type '" . $self->{stdin}->[0] . "'");
@@ -472,7 +472,7 @@ The 1 argument form takes either
 This is a reference to a scalar that will have the output appended
 to it.
 
-=item A code ref 
+=item A code ref
 
 This code will be called (probably more than once) with a scalar
 of text to be appended which has been read from stdout/stderr.
@@ -525,71 +525,71 @@ sub _access_out {
     my $fd = shift;
 
     if(@_ == 0) {
-	    if($self->{run}) {
-	        if(exists $self->{$name . "_text"}) {
-		        return $self->{$name . "_text"};
-	        }
-	        else {
-		        croak "Can't read $name from type \"" . $self->{$name}->[0] . \"";
-	        }
-	    }
-	    else {
-	        croak "Can't get $name until run() has happened";
-	    }
+            if($self->{run}) {
+                if(exists $self->{$name . "_text"}) {
+                        return $self->{$name . "_text"};
+                }
+                else {
+                        croak "Can't read $name from type \"" . $self->{$name}->[0] . \"";
+                }
+            }
+            else {
+                croak "Can't get $name until run() has happened";
+            }
     }
 
     # At this point, we're in a >0 argument form
 
     croak "Can't change setup after command has been run"
-	    if($self->{run});
+            if($self->{run});
 
     if(@_ == 1) {
-	    if(!defined $_[0]) {
-	        croak "Argument wasn't defined";
-	    }
+            if(!defined $_[0]) {
+                croak "Argument wasn't defined";
+            }
 
-	    if(!ref $_[0] || ref $_[0] ne "CODE" && ref $_[0] ne "SCALAR") {
-	        croak "Expecting coderef or scalarref for one-argument form";
-	    }
-	    elsif(ref $_[0] eq "CODE") {
-	        $self->{$name} = [coderef => $_[0]];
-	        $self->{select}->[$fd] = 1;
-	    }
-	    elsif(ref $_[0] eq "SCALAR") {
-	        $self->{$name} = [scalarref => $_[0]];
-	        $self->{select}->[$fd] = 1;
-	    }
-	    else {
-	        die "Should be unreachable";
-	    }
+            if(!ref $_[0] || ref $_[0] ne "CODE" && ref $_[0] ne "SCALAR") {
+                croak "Expecting coderef or scalarref for one-argument form";
+            }
+            elsif(ref $_[0] eq "CODE") {
+                $self->{$name} = [coderef => $_[0]];
+                $self->{select}->[$fd] = 1;
+            }
+            elsif(ref $_[0] eq "SCALAR") {
+                $self->{$name} = [scalarref => $_[0]];
+                $self->{select}->[$fd] = 1;
+            }
+            else {
+                die "Should be unreachable";
+            }
     }
     elsif(@_ == 2) {
-	    if(!defined $_[0]) {
-	        croak "Type wasn't defined";
-	    }
+            if(!defined $_[0]) {
+                croak "Type wasn't defined";
+            }
 
-	    if($_[0] eq "-inherit") {
-	        if($name eq "stdout") {
-		        $self->{$name} = [file => \*STDOUT];
-	        }
-	        else {
-		        $self->{$name} = [file => \*STDERR];
-	        }
-	        $self->{select}->[$fd] = 0;
-	    }
-	    elsif($_[0] eq "-file") {
-	        $self->{$name} = [file => $_[1]];
-	        $self->{select}->[$fd] = 0;
-	    }
-	    elsif($_[0] eq "-filename") {
-	        if(!defined $_[1] || ref $_[1] || $_[1] =~ /\000/) {
-		        croak "Argument to -filename wasn't a valid filename";
-	        }
-	        $self->{$name} = [filename => $_[1]];
-	        $self->{select}->[$fd] = 0;
-	    }
-	    elsif($_[0] eq "-fd") {
-	        if(!defined $_[1] || ref $_[1] || $_[1] !~ /^\d+$/) {
+            if($_[0] eq "-inherit") {
+                if($name eq "stdout") {
+                        $self->{$name} = [file => \*STDOUT];
+                }
+                else {
+                        $self->{$name} = [file => \*STDERR];
+                }
+                $self->{select}->[$fd] = 0;
+            }
+            elsif($_[0] eq "-file") {
+                $self->{$name} = [file => $_[1]];
+                $self->{select}->[$fd] = 0;
+            }
+            elsif($_[0] eq "-filename") {
+                if(!defined $_[1] || ref $_[1] || $_[1] =~ /\000/) {
+                        croak "Argument to -filename wasn't a valid filename";
+                }
+                $self->{$name} = [filename => $_[1]];
+                $self->{select}->[$fd] = 0;
+            }
+            elsif($_[0] eq "-fd") {
+                if(!defined $_[1] || ref $_[1] || $_[1] !~ /^\d+$/) {
                 croak "Argument to -fd wasn't a file descriptor";
             }
             $self->{$name} = [fd => $_[1]];
@@ -641,7 +641,7 @@ sub run {
     $self->_verify_fh();
 
     for my $fh (qw(stdin stdout stderr)) {
-	my $select = $self->{select}->[{stdin => 0, stdout => 1, stderr => 2}->{$fh}];
+        my $select = $self->{select}->[{stdin => 0, stdout => 1, stderr => 2}->{$fh}];
     if($select) {
         my $pipe = IO::Pipe->new();
         if(!defined $pipe) {
@@ -899,22 +899,22 @@ sub _select_wait {
                 $self->{status} = $?;
             }
 
-	    if (@{$self->{timers}}) {
-		my $now = time;
-		while (@{$self->{timers}} && $self->{timers}->[0][0] <= $now) {
-		    $DB::single=1;
-		    my ($time, $action) = @{shift @{$self->{timers}}};
-		    if (ref $action eq 'CODE') {
-			$self->_debug(3, "Calling timer handler at $now");
-			$action->($self, $pid, $time);
-		    }
-		    else {
-			$self->_debug(3, "Sending signal $action to child $pid at $now");
-			kill $action, $pid
-			    or $self->_debug(3, "Sending signal failed");
-		    }
-		}
-	    }
+            if (@{$self->{timers}}) {
+                my $now = time;
+                while (@{$self->{timers}} && $self->{timers}->[0][0] <= $now) {
+                    $DB::single=1;
+                    my ($time, $action) = @{shift @{$self->{timers}}};
+                    if (ref $action eq 'CODE') {
+                        $self->_debug(3, "Calling timer handler at $now");
+                        $action->($self, $pid, $time);
+                    }
+                    else {
+                        $self->_debug(3, "Sending signal $action to child $pid at $now");
+                        kill $action, $pid
+                            or $self->_debug(3, "Sending signal failed");
+                    }
+                }
+            }
         }
 
         if($rin !~ /[^\0]/ && $win !~ /[^\0]/ && !defined $self->{status}) {

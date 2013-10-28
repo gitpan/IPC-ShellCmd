@@ -39,26 +39,27 @@ is ($status, 0, 'check exit status');
 
 # Check that environment variables are passed through
 
-$isc = IPC::ShellCmd->new(["/bin/sh", '-c', 'echo -n $ANSWER1-$ANSWER2'])
+$isc = IPC::ShellCmd->new(["/bin/sh", '-c', 'echo $ANSWER1-$ANSWER2'])
     ->add_envs(ANSWER1 => '42', ANSWER2 => '22')
     ->run();
 
 $stdout = $isc->stdout();
 $status = $isc->status();
 
-is ($stdout, "42-22", 'environment variables picked up');
+like ($stdout, qr{42-22}, 'environment variables picked up');
 is ($status, 0, 'check exit status');
 
 # Check that working directory is acted upon
+# (use a directory that exists on Linux, BSD, and MacOS)
 
 $isc = IPC::ShellCmd->new(["/bin/sh", '-c', 'pwd'])
-    ->working_dir('/tmp')
+    ->working_dir('/etc')
     ->run();
 
 $stdout = $isc->stdout();
 $status = $isc->status();
 
-like ($stdout, qr{^/tmp\s*$}, 'working directory set');
+like ($stdout, qr{^/etc\s*$}, 'working directory set');
 is ($status, 0, 'check exit status');
 
 
@@ -87,7 +88,7 @@ $stderr = $isc->stderr();
 $status = $isc->status();
 
 is ($stdout, "42-22", 'environment variables picked up');
-like ($stderr, qr{user.*system.*CPU}, 'stderr contains timing info');
+like ($stderr, qr{\d+\.\d+\s*user.*\d+\.\d+\s*sys}, 'stderr contains timing info');
 is ($status, 0, 'check exit status');
 
 
