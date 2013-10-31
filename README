@@ -40,11 +40,11 @@ DESCRIPTION
     Creates a new IPC::ShellCmd object linking to the command and arguments.
     Possible options:
 
-    "<-nowarn">
+    "-nowarn"
         Don't throw warnings for overwriting values that have already been
         set
 
-    "<-debug">
+    "-debug"
         Set the debug level
 
   *$isc*->set_umask(*$mask*)
@@ -53,32 +53,32 @@ DESCRIPTION
 
   *$isc*->working_dir([*$path*])
     Sets the working directory that this command is going to run under, and
-    returns ** so that it can be chained, or returns the current setting
+    returns *$isc* so that it can be chained, or returns the current setting
     with no arguments.
 
   *$isc*->add_envs(*$env1* => *$val1* [, *$env2* => *$val2*, ...])
     Adds environment variables to be setup when the command is run. Returns
-    ** so that it can be chained.
+    *$isc* so that it can be chained.
 
   *$isc*->add_timers(*$time1* => *$signame* [, *$time2* => \*&handler*, ...])
-    Adds timers to be setup when the command is run. Returns ** so that it
-    can be chained.
+    Adds timers to be setup when the command is run. Returns *$isc* so that
+    it can be chained.
 
   *$isc*->chain_prog(*$chain_obj*, [*$opt* => *$val*, ...])
     Adds a chain object, for example IPC::ShellCmd::Sudo->new(User =>
-    'root') into the chain. Returns ** so that it can be chained.
+    'root') into the chain. Returns *$isc* so that it can be chained.
 
     Valid options are:
 
-    "<-include-stdin">
+    "-include-stdin"
         If set, and stdin is a file name (rather than a pipe, open
         filehandle, or other type of descriptor) then the file will be
         included in the chain.
 
-    "<-include-stdout">
+    "-include-stdout"
         As above but with stdout.
 
-    "<-include-stderr">
+    "-include-stderr"
         As above but with stderr.
 
   *$isc*->stdin($stdin)
@@ -99,20 +99,21 @@ DESCRIPTION
     The 2 argument form takes a type and then a ref, handle or other. Valid
     types:
 
-    "<-inherit">
+    "-inherit"
         The argument to this is ignored. If specified this takes stdin from
         whatever the caller is reading from.
 
-    "<-file">
+    "-file"
         The argument to this is a perl filehandle.
 
-    "<-fd">
+    "-fd"
         The argument to this is a system file descriptor.
 
-    "<-filename">
+    "-filename"
         The argument to this is a file name which is opened.
 
-    Both of these return ** for chaining. The default is an empty scalar.
+    Both of these return *$isc* for chaining. The default is an empty
+    scalar.
 
   *$isc*->stdout()
   *$isc*->stderr()
@@ -140,22 +141,22 @@ DESCRIPTION
     The 2 argument form takes a type and then a ref, handle or other. Valid
     types:
 
-    "<-inherit">
+    "-inherit"
         The argument to this is ignored. If specified this takes
         stdout/stderr from whatever the caller is set to.
 
-    "<-file">
+    "-file"
         The argument to this is a perl filehandle.
 
-    "<-fd">
+    "-fd"
         The argument to this is a system file descriptor.
 
-    "<-filename">
+    "-filename"
         The argument to this is a file name which is opened.
 
-    All of these forms return ** for chaining. The default is that it will
-    populate an internal variable to be used by the corresponding 0-argument
-    form.
+    All of these forms return *$isc* for chaining. The default is that it
+    will populate an internal variable to be used by the corresponding
+    0-argument form.
 
   *$isc*->status()
     Returns the exit status of the command if it got run.

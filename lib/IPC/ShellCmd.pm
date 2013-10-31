@@ -8,7 +8,7 @@ use POSIX qw(:sys_wait_h);
 use Time::HiRes qw(time);
 use 5.008004; # May work with lower, unwilling to support unless you provide patches :)
 
-our $VERSION = '0.003';
+our $VERSION = '0.005';
 $VERSION = eval $VERSION;
 
 $IPC::ShellCmd::BufferLength = 16384;
@@ -59,11 +59,11 @@ Creates a new IPC::ShellCmd object linking to the command and arguments. Possibl
 
 =over
 
-=item C<<-nowarn>>
+=item C<< -nowarn >>
 
 Don't throw warnings for overwriting values that have already been set
 
-=item C<<-debug>>
+=item C<< -debug >>
 
 Set the debug level
 
@@ -164,7 +164,7 @@ sub set_umask {
 =head2 I<$isc>->B<working_dir>([I<$path>])
 
 Sets the working directory that this command is going to run under,
-and returns I<> so that it can be chained, or returns the
+and returns I<$isc> so that it can be chained, or returns the
 current setting with no arguments.
 
 =cut
@@ -200,7 +200,7 @@ sub working_dir {
 =head2 I<$isc>->B<add_envs>(I<$env1> => I<$val1> [, I<$env2> => I<$val2>, ...])
 
 Adds environment variables to be setup when the command is run.
-Returns I<> so that it can be chained.
+Returns I<$isc> so that it can be chained.
 
 =cut
 
@@ -231,7 +231,7 @@ sub add_envs {
 =head2 I<$isc>->B<add_timers>(I<$time1> => I<$signame> [, I<$time2> => \I<&handler>, ...])
 
 Adds timers to be setup when the command is run.
-Returns I<> so that it can be chained.
+Returns I<$isc> so that it can be chained.
 
 =cut
 
@@ -261,22 +261,22 @@ sub add_timers {
 =head2 I<$isc>->B<chain_prog>(I<$chain_obj>, [I<$opt> => I<$val>, ...])
 
 Adds a chain object, for example IPC::ShellCmd::Sudo->new(User => 'root')
-into the chain. Returns I<> so that it can be chained.
+into the chain. Returns I<$isc> so that it can be chained.
 
 Valid options are:
 
 =over
 
-=item C<<-include-stdin>>
+=item C<< -include-stdin >>
 
 If set, and stdin is a file name (rather than a pipe, open filehandle, or
 other type of descriptor) then the file will be included in the chain.
 
-=item C<<-include-stdout>>
+=item C<< -include-stdout >>
 
 As above but with stdout.
 
-=item C<<-include-stderr>>
+=item C<< -include-stderr >>
 
 As above but with stderr.
 
@@ -346,26 +346,26 @@ Valid types:
 
 =over
 
-=item C<<-inherit>>
+=item C<< -inherit >>
 
 The argument to this is ignored. If specified this takes stdin
 from whatever the caller is reading from.
 
-=item C<<-file>>
+=item C<< -file >>
 
 The argument to this is a perl filehandle.
 
-=item C<<-fd>>
+=item C<< -fd >>
 
 The argument to this is a system file descriptor.
 
-=item C<<-filename>>
+=item C<< -filename >>
 
 The argument to this is a file name which is opened.
 
 =back
 
-Both of these return I<> for chaining. The default is
+Both of these return I<$isc> for chaining. The default is
 an empty scalar.
 
 =cut
@@ -484,26 +484,26 @@ Valid types:
 
 =over
 
-=item C<<-inherit>>
+=item C<< -inherit >>
 
 The argument to this is ignored. If specified this takes stdout/stderr
 from whatever the caller is set to.
 
-=item C<<-file>>
+=item C<< -file >>
 
 The argument to this is a perl filehandle.
 
-=item C<<-fd>>
+=item C<< -fd >>
 
 The argument to this is a system file descriptor.
 
-=item C<<-filename>>
+=item C<< -filename >>
 
 The argument to this is a file name which is opened.
 
 =back
 
-All of these forms return I<> for chaining. The default is
+All of these forms return I<$isc> for chaining. The default is
 that it will populate an internal variable to be used by the
 corresponding 0-argument form.
 
@@ -792,7 +792,7 @@ sub _select_wait {
                 my $length = length($self->{stdin}->[1]);
                 if($length) {
                     $length = $IPC::ShellCmd::BufferLength
-                    if($length > $IPC::ShellCmd::BufferLength);
+                        if($length > $IPC::ShellCmd::BufferLength);
                     $self->_debug(3, "Writing into stdin from plain scalar");
                     my $rc = syswrite($self->{stdin}->[2], $self->{stdin}->[1], $length);
                     if(!defined $rc) {
@@ -812,254 +812,254 @@ sub _select_wait {
                 my $length = length(${$self->{stdin}->[1]}) - $self->{stdin}->[3];
                 if($length) {
                     $length = $IPC::ShellCmd::BufferLength
-                    if($length > $IPC::ShellCmd::BufferLength);
+                        if($length > $IPC::ShellCmd::BufferLength);
                     $self->_debug(3, "Writing into stdin from scalarref");
                     my $rc = syswrite($self->{stdin}->[2],
-                        substr(${$self->{stdin}->[1]}, $self->{stdin}->[3]), $length);
-                        if(!defined $rc) {
-                            die("write(->stdin): $!\n");
-                        }
+                                      substr(${$self->{stdin}->[1]}, $self->{stdin}->[3]), $length);
+                    if(!defined $rc) {
+                        die("write(->stdin): $!\n");
+                    }
 
-                        $self->{stdin}->[3] += $rc;
-                    }
-                    if(length(${$self->{stdin}->[1]}) == $self->{stdin}->[3]) {
-                        $self->_debug(3, "Removing stdin from writers, and closing");
-                        vec($win, fileno($self->{stdin}->[2]), 1) = 0;
-                        close($self->{stdin}->[2]);
-                    }
+                    $self->{stdin}->[3] += $rc;
                 }
-                elsif($self->{stdin}->[0] eq "coderef") {
-                    $self->{stdin}->[3] = ""
+                if(length(${$self->{stdin}->[1]}) == $self->{stdin}->[3]) {
+                    $self->_debug(3, "Removing stdin from writers, and closing");
+                    vec($win, fileno($self->{stdin}->[2]), 1) = 0;
+                    close($self->{stdin}->[2]);
+                }
+            }
+            elsif($self->{stdin}->[0] eq "coderef") {
+                $self->{stdin}->[3] = ""
                     unless defined $self->{stdin}->[3];
 
-                    $self->{stdin}->[4] = 0
+                $self->{stdin}->[4] = 0
                     unless defined $self->{stdin}->[4];
-                    my $finished = $self->{stdin}->[4];
+                my $finished = $self->{stdin}->[4];
 
-                    if(!$finished && length $self->{stdin}->[3] < $IPC::ShellCmd::BufferLength) {
-                        my $data = $self->{stdin}->[1]->($IPC::ShellCmd::BufferLength - length($self->{stdin}->[3]));
-                        if(!defined $data) {
-                            $finished = 1;
-                        }
-
-                        $self->{stdin}->[3] .= $data;
-                        if(length($self->{stdin}->[3]) > $IPC::ShellCmd::BufferLength) {
-                            $self->{stdin}->[3] = substr($self->{stdin}->[3], 0, $IPC::ShellCmd::BufferLength);
-
-                        }
+                if(!$finished && length $self->{stdin}->[3] < $IPC::ShellCmd::BufferLength) {
+                    my $data = $self->{stdin}->[1]->($IPC::ShellCmd::BufferLength - length($self->{stdin}->[3]));
+                    if(!defined $data) {
+                        $finished = 1;
                     }
 
-                    if(length($self->{stdin}->[3])) {
-                        $self->_debug(3, sprintf("Writing %d into stdin from coderef", length($self->{stdin}->[3])));
-                        my $rc = syswrite($self->{stdin}->[2], $self->{stdin}->[3], length($self->{stdin}->[3]));
-                        if(!defined $rc) {
-                            die("write(->stdin): $!\n");
-                        }
+                    $self->{stdin}->[3] .= $data;
+                    if(length($self->{stdin}->[3]) > $IPC::ShellCmd::BufferLength) {
+                        $self->{stdin}->[3] = substr($self->{stdin}->[3], 0, $IPC::ShellCmd::BufferLength);
 
-                        $self->{stdin}->[3] = substr($self->{stdin}->[3], $rc);
-                    }
-
-                    $self->{stdin}->[4] = $finished;
-
-                    if($finished && !length($self->{stdin}->[3])) {
-                        $self->_debug(3, "Removing stdin from writers, and closing");
-                        vec($win, fileno($self->{stdin}->[2]), 1) = 0;
-                        close($self->{stdin}->[2]);
                     }
                 }
-            }
 
-            for my $fh (qw(stdout stderr)) {
-                if($self->{$fh}->[0] ne "file" && defined(fileno($self->{$fh}->[2])) && vec($rout, fileno($self->{$fh}->[2]), 1)) {
-                    my $buff = "";
-                    $self->_debug(3, "Reading $IPC::ShellCmd::BufferLength from $fh");
-                    my $rc = sysread($self->{$fh}->[2], $buff, $IPC::ShellCmd::BufferLength);
+                if(length($self->{stdin}->[3])) {
+                    $self->_debug(3, sprintf("Writing %d into stdin from coderef", length($self->{stdin}->[3])));
+                    my $rc = syswrite($self->{stdin}->[2], $self->{stdin}->[3], length($self->{stdin}->[3]));
                     if(!defined $rc) {
-                        die("read(->$fh): $!\n");
+                        die("write(->stdin): $!\n");
                     }
-                    if(!$rc) {
-                        $self->_debug(3, "Removing $fh from readers, and closing");
-                        vec($rin, fileno($self->{$fh}->[2]), 1) = 0;
-                        close($self->{$fh}->[2]);
-                    }
-                    else {
-                        if($self->{$fh}->[0] eq "scalarref") {
-                            ${$self->{$fh}->[1]} .= $buff;
-                        }
-                        elsif($self->{$fh}->[0] eq "coderef") {
-                            $self->{$fh}->[1]->($buff);
-                        }
-                    }
+
+                    $self->{stdin}->[3] = substr($self->{stdin}->[3], $rc);
                 }
-            }
 
-            if(!defined $self->{status} && waitpid($pid, WNOHANG)) {
-                $self->_debug(3, "Reaped child $pid in loop");
-                $win = "";
-                $self->{status} = $?;
-            }
+                $self->{stdin}->[4] = $finished;
 
-            if (@{$self->{timers}}) {
-                my $now = time;
-                while (@{$self->{timers}} && $self->{timers}->[0][0] <= $now) {
-                    $DB::single=1;
-                    my ($time, $action) = @{shift @{$self->{timers}}};
-                    if (ref $action eq 'CODE') {
-                        $self->_debug(3, "Calling timer handler at $now");
-                        $action->($self, $pid, $time);
-                    }
-                    else {
-                        $self->_debug(3, "Sending signal $action to child $pid at $now");
-                        kill $action, $pid
-                            or $self->_debug(3, "Sending signal failed");
-                    }
+                if($finished && !length($self->{stdin}->[3])) {
+                    $self->_debug(3, "Removing stdin from writers, and closing");
+                    vec($win, fileno($self->{stdin}->[2]), 1) = 0;
+                    close($self->{stdin}->[2]);
                 }
             }
         }
 
-        if($rin !~ /[^\0]/ && $win !~ /[^\0]/ && !defined $self->{status}) {
-            $self->_debug(3, "Trying to reap child $pid");
-            my $rc = waitpid($pid, 0);
-            $self->_debug(3, "Reaped child $pid");
-            if(defined $rc) {
-                $self->{status} = $?;
-            }
-            else {
-                die("waitpid: $!\n");
-            }
-        }
-        return;
-    }
-
-    sub _verify_fh {
-        my $self = shift;
-
-        for my $fh (qw(stdin stdout stderr)) {
-            if(!$self->{$fh}) {
-                croak "Defaulting didn't happen for $fh";
-            }
-
-            my $type = $self->{$fh}->[0];
-            my $select = $self->{select}->[{stdin => 0, stdout => 1, stderr => 2}->{$fh}];
-
-            # all of the "filename" and "fd" types should have been got rid of as a part
-            # of the _transform_cmd called before this.
-
-            # First check the types of all the fhs
-            if($type ne "plain" && $type ne "coderef" && $type ne "scalarref" &&
-            $type ne "file") {
-                # this is an assert so there's no CarpLevel...
-                croak "Unrecognised type $type for $fh";
-            }
-            elsif($type eq "plain" && $fh ne "stdin") {
-                croak "Plain is only useful for stdin, not $fh";
-            }
-
-            # Then we check that select is correctly set.
-            if($type eq "plain" || $type eq "coderef" || $type eq "scalarref") {
-                if(!$select) {
-                    croak "$type should be selected on but isn't for $fh";
-                }
-            }
-            else {
-                if($select) {
-                    croak "$type shouldn't be selected on but is for $fh";
-                }
-            }
-        }
-    }
-
-    sub _transform_cmd {
-        my $self = shift;
-
-        my $count = 1;
-
-        my $file = { stdin => 0, stdout => 0, stderr => 0 };
-
-        for my $fh (qw(stdin stdout stderr)) {
-            if($self->{$fh} && $self->{$fh}->[0] eq "filename") {
-                $file->{$fh} = 1;
-            }
-        }
-
-        my @cmd = @{$self->{cmd}};
-
-        for my $el (@{$self->{chain}||[]}) {
-            $self->_debug(2, "Before chain $count cmd = \`" . join("', \`", @cmd) . "'");
-
-            my @args = ();
-            if($count == 1) {
-                if(defined($self->{wd})) {
-                    push(@args, "-wd", $self->{wd});
-                    delete $self->{wd};
-                }
-                if(keys %{$self->{env}}) {
-                    push(@args, "-env", {%{$self->{env}}});
-                    delete $self->{env};
-                }
-                if(defined($self->{umask})) {
-                    push(@args, "-umask", $self->{umask});
-                    delete $self->{umask};
-                }
-            }
-
-            for my $fh (qw(stdin stdout stderr)) {
-                if($file->{$fh} && $el->{opt}->{$fh}) {
-                    push(@args, "-" . $fh, $self->{$fh}->[1]);
-                    $file->{$fh} = 0;
-                    # in this sub bit, because of $file->{fh}, this must be
-                    # a file name, so we can do the following.
-                    $self->{$fh}->[1] = "/dev/null";
-                }
-            }
-
-            $self->_debug(2, "Calling chain $count with args = \`" . join("', \`", @args) . "'");
-            @cmd = $el->{obj}->chain([@cmd], {@args});
-
-            $self->_debug(2, "After chain $count cmd = \`" . join("', \`", @cmd) . "'");
-
-            $count++;
-        }
-
-        # Figure out all the command defaults
-        if(!$self->{stdin}) {
-            $self->{stdin} = [filename => "/dev/null"];
-            $self->{select}->[0] = 0;
-        }
         for my $fh (qw(stdout stderr)) {
-            if(!$self->{$fh}) {
-                $self->{$fh . "_text"} = "";
-                my $ref = \$self->{$fh . "_text"};
-                $self->{$fh} = [scalarref => $ref];
-            }
-        }
-
-        # as a side effect of this sub, we also end up transforming file names and file descriptors
-        # into file handles.
-        for my $fh (qw(stdin stdout stderr)) {
-            local $Carp::CarpLevel = 1;
-            if($self->{$fh} && $self->{$fh}->[0] eq "filename") {
-                my $pfh;
-                if(open($pfh, ($fh eq "stdin"?"<":">>"), $self->{$fh}->[1])) {
-                    $self->{$fh} = [file => $pfh, 1];
+            if($self->{$fh}->[0] ne "file" && defined(fileno($self->{$fh}->[2])) && vec($rout, fileno($self->{$fh}->[2]), 1)) {
+                my $buff = "";
+                $self->_debug(3, "Reading $IPC::ShellCmd::BufferLength from $fh");
+                my $rc = sysread($self->{$fh}->[2], $buff, $IPC::ShellCmd::BufferLength);
+                if(!defined $rc) {
+                    die("read(->$fh): $!\n");
+                }
+                if(!$rc) {
+                    $self->_debug(3, "Removing $fh from readers, and closing");
+                    vec($rin, fileno($self->{$fh}->[2]), 1) = 0;
+                    close($self->{$fh}->[2]);
                 }
                 else {
-                    croak "Couldn't open file \"" . $self->{$fh}->[1] . "\": $!";
-                }
-            }
-            elsif($self->{$fh} && $self->{$fh}->[0] eq "fd") {
-                my $pfh;
-                if(open($pfh, ($fh eq "stdin"?"<&=":">>&="), $self->{$fh}->[1])) {
-                    $self->{$fh} = [file => $pfh];
-                }
-                else {
-                    croak "Couldn't fdopen " . $self->{$fh}->[1] . ": $!";
+                    if($self->{$fh}->[0] eq "scalarref") {
+                        ${$self->{$fh}->[1]} .= $buff;
+                    }
+                    elsif($self->{$fh}->[0] eq "coderef") {
+                        $self->{$fh}->[1]->($buff);
+                    }
                 }
             }
         }
 
-        return @cmd;
+        if(!defined $self->{status} && waitpid($pid, WNOHANG)) {
+            $self->_debug(3, "Reaped child $pid in loop");
+            $win = "";
+            $self->{status} = $?;
+        }
+
+        if (@{$self->{timers}}) {
+            my $now = time;
+            while (@{$self->{timers}} && $self->{timers}->[0][0] <= $now) {
+                $DB::single=1;
+                my ($time, $action) = @{shift @{$self->{timers}}};
+                if (ref $action eq 'CODE') {
+                    $self->_debug(3, "Calling timer handler at $now");
+                    $action->($self, $pid, $time);
+                }
+                else {
+                    $self->_debug(3, "Sending signal $action to child $pid at $now");
+                    kill $action, $pid
+                        or $self->_debug(3, "Sending signal failed");
+                }
+            }
+        }
     }
+
+    if($rin !~ /[^\0]/ && $win !~ /[^\0]/ && !defined $self->{status}) {
+        $self->_debug(3, "Trying to reap child $pid");
+        my $rc = waitpid($pid, 0);
+        $self->_debug(3, "Reaped child $pid");
+        if(defined $rc) {
+            $self->{status} = $?;
+        }
+        else {
+            die("waitpid: $!\n");
+        }
+    }
+    return;
+}
+
+sub _verify_fh {
+    my $self = shift;
+
+    for my $fh (qw(stdin stdout stderr)) {
+        if(!$self->{$fh}) {
+            croak "Defaulting didn't happen for $fh";
+        }
+
+        my $type = $self->{$fh}->[0];
+        my $select = $self->{select}->[{stdin => 0, stdout => 1, stderr => 2}->{$fh}];
+
+        # all of the "filename" and "fd" types should have been got rid of as a part
+        # of the _transform_cmd called before this.
+
+        # First check the types of all the fhs
+        if($type ne "plain" && $type ne "coderef" && $type ne "scalarref" &&
+           $type ne "file") {
+            # this is an assert so there's no CarpLevel...
+            croak "Unrecognised type $type for $fh";
+        }
+        elsif($type eq "plain" && $fh ne "stdin") {
+            croak "Plain is only useful for stdin, not $fh";
+        }
+
+        # Then we check that select is correctly set.
+        if($type eq "plain" || $type eq "coderef" || $type eq "scalarref") {
+            if(!$select) {
+                croak "$type should be selected on but isn't for $fh";
+            }
+        }
+        else {
+            if($select) {
+                croak "$type shouldn't be selected on but is for $fh";
+            }
+        }
+    }
+}
+
+sub _transform_cmd {
+    my $self = shift;
+
+    my $count = 1;
+
+    my $file = { stdin => 0, stdout => 0, stderr => 0 };
+
+    for my $fh (qw(stdin stdout stderr)) {
+        if($self->{$fh} && $self->{$fh}->[0] eq "filename") {
+            $file->{$fh} = 1;
+        }
+    }
+
+    my @cmd = @{$self->{cmd}};
+
+    for my $el (@{$self->{chain}||[]}) {
+        $self->_debug(2, "Before chain $count cmd = \`" . join("', \`", @cmd) . "'");
+
+        my @args = ();
+        if($count == 1) {
+            if(defined($self->{wd})) {
+                push(@args, "-wd", $self->{wd});
+                delete $self->{wd};
+            }
+            if(keys %{$self->{env}}) {
+                push(@args, "-env", {%{$self->{env}}});
+                delete $self->{env};
+            }
+            if(defined($self->{umask})) {
+                push(@args, "-umask", $self->{umask});
+                delete $self->{umask};
+            }
+        }
+
+        for my $fh (qw(stdin stdout stderr)) {
+            if($file->{$fh} && $el->{opt}->{$fh}) {
+                push(@args, "-" . $fh, $self->{$fh}->[1]);
+                $file->{$fh} = 0;
+                # in this sub bit, because of $file->{fh}, this must be
+                # a file name, so we can do the following.
+                $self->{$fh}->[1] = "/dev/null";
+            }
+        }
+
+        $self->_debug(2, "Calling chain $count with args = \`" . join("', \`", @args) . "'");
+        @cmd = $el->{obj}->chain([@cmd], {@args});
+
+        $self->_debug(2, "After chain $count cmd = \`" . join("', \`", @cmd) . "'");
+
+        $count++;
+    }
+
+    # Figure out all the command defaults
+    if(!$self->{stdin}) {
+        $self->{stdin} = [filename => "/dev/null"];
+        $self->{select}->[0] = 0;
+    }
+    for my $fh (qw(stdout stderr)) {
+        if(!$self->{$fh}) {
+            $self->{$fh . "_text"} = "";
+            my $ref = \$self->{$fh . "_text"};
+            $self->{$fh} = [scalarref => $ref];
+        }
+    }
+
+    # as a side effect of this sub, we also end up transforming file names and file descriptors
+    # into file handles.
+    for my $fh (qw(stdin stdout stderr)) {
+        local $Carp::CarpLevel = 1;
+        if($self->{$fh} && $self->{$fh}->[0] eq "filename") {
+            my $pfh;
+            if(open($pfh, ($fh eq "stdin"?"<":">>"), $self->{$fh}->[1])) {
+                $self->{$fh} = [file => $pfh, 1];
+            }
+            else {
+                croak "Couldn't open file \"" . $self->{$fh}->[1] . "\": $!";
+            }
+        }
+        elsif($self->{$fh} && $self->{$fh}->[0] eq "fd") {
+            my $pfh;
+            if(open($pfh, ($fh eq "stdin"?"<&=":">>&="), $self->{$fh}->[1])) {
+                $self->{$fh} = [file => $pfh];
+            }
+            else {
+                croak "Couldn't fdopen " . $self->{$fh}->[1] . ": $!";
+            }
+        }
+    }
+
+    return @cmd;
+}
 
 =head1 BUGS
 

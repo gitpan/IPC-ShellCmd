@@ -1,3 +1,13 @@
+0.005   2013-10-31
+  - change t/02_run.t tests to try to get echo test and working
+    directory test to pass on BSD/OSX
+  - adjusted minimum number of timer callback calls that are
+    acceptable for passing, so that the test should work on busy test
+    systems
+
+0.004   2013-10-29
+  - fix POD errors
+
 0.003   2013-10-28
   - changed regexes matching command output on tests to match BSD and MacOS usage as well
     as Linux.
